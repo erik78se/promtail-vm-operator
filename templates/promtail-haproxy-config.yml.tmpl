@@ -1,0 +1,52 @@
+# haproxy
+# See: https://devpress.csdn.net/bigdata/62f6169d7e6682346618a814.html
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  # This file is the file that prommail records log offset. It will be updated every time it is collected
+  # Even if the service is down, the next restart will start from the log offset recorded in this file
+  filename: /opt/promtail/positions.yaml
+
+clients: # Note that the log is sent to Loki here
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+# The following configuration section is very similar to Prometheus
+  - job_name: system
+    static_configs:
+    - targets:
+        - XXXXXX
+      labels:
+        # Static tags represent that all logs under this job contain at least these two tags
+        job: haproxy
+        # Level. Because the haproxy log itself does not contain the log level, loki cannot be parsed
+        # If the normal log contains the mark of standard log registration, this label does not need to be set
+        level: info
+        __path__: /var/log/haproxy.log
+    pipeline_stages:
+    - match:
+        # This part deals with the logs, and the selector is used to filter the log streams that meet the conditions
+        selector: '{job="haproxy"}'
+        stages:
+        - regex:
+            # Regular expression in RE2 format,? P < XXX > means to set the matching part as a variable
+            expression: '^(?<syslog_time>[^ ]* +[^ ]* +[^ ]*) (?<syslog_host>[\w\-\.]+) (?<ps>\w+)\[(?<pid>\d+)\]: ((?<c_ip>[\w\.]+):(?<c_port>\d+) \[(?<time>.+)\] (?<f_end>[\w\~\-]+) (?<b_end>[\w\-]+)\/(?<b_server>[\w\.\-]+) (?<tq>[\d\-]+)\/(?<tw>[\d\-]+)\/(?<tc>[\d\-]+)\/(?<tr>[\d\-]+)\/(?<tt>[\d\-]+) (?<status_code>\d+) (?<bytes>\d+) (?<req_cookie>\S?) (?<res_cookie>\S?) (?<t_state>[\w\-]+) (?<actconn>\d+)\/(?<feconn>\d+)\/(?<beconn>\d+)\/(?<srv_conn>\d+)\/(?<retries>\d+) (?<srv_queue>\d+)\/(?<backend_queue>\d+) \{?(?<req_headers>[^}"]*)\}? ?\{?(?<res_headers>[^"}]*)\}? ?"(?<request>[^"]*).*|((\[(?<message_level>[^\]]+)\] )?(?<message>.+)))'
+        # In this step, I want to filter out the time records of my own log and other things I don't want, and output them with the output variable
+        - output:
+            source: output
+    - match:
+        # Although I still use the same condition selector here, the log flow has been processed once
+        # So the unwanted information no longer exists
+        selector: '{job="haproxy"}'
+        stages:
+        - regex:
+            expression: 'frontend:(?P<frontend>\S+) haproxy:(?P<haproxy>\S+) client:(?P<client>\S+) method:(?P<method>\S+) code:(?P<code>\S+) url:(?P<url>\S+) destination:(?P<destination>\S+)}?$'
+        - labels:
+            # Dynamic label generation
+            frontend:
+            method:
+            code:
+            destination:

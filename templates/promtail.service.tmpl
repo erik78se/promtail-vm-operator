@@ -1,0 +1,11 @@
+[Unit]
+Description=Promtail client for sending logs to Loki, installed by juju charm
+After=network.target
+
+[Service]
+ExecStart=/opt/promtail/promatail-linux-amd64 -config.file=/opt/promtail/promtail-journal-config.yaml
+Restart=always
+TimeoutStopSec=3
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,23 @@
+# Monitor /var/log/*log
+# See: https://grafana.com/docs/loki/latest/clients/promtail/configuration/
+
+# Grafana example: https://grafana.com/docs/grafana-cloud/data-configuration/logs/collect-logs-with-promtail/
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /opt/promtail/positions.yaml
+
+clients:
+  - url: http://localhost:3100/loki/api/v1/push
+
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /var/log/*.log

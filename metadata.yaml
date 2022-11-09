@@ -1,0 +1,27 @@
+name: promtail
+ 
+display-name: Promtail subordinate
+
+summary: Promtail is a log shipper.
+
+description: |
+  Promtail is a client for gathering and sending logs to Loki. 
+  
+  Promtail is commonly deployed to every machine that needed to monitor logs.
+
+
+subordinate: true
+
+requires:
+  juju-info:
+    interface: juju-info
+    scope: container
+
+
+resources:
+  promtail-zipfile:
+    type: file
+    filename: promtail.zip
+    description: |
+      Official zip release file. Retrieved from GitHub Releases.
+      wget -qO promtail.zip "https://github.com/grafana/loki/releases/download/v${PROMATAIL_VERSION}/promtail-linux-amd64.zip"
