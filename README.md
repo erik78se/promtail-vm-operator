@@ -50,6 +50,11 @@ Once the promtail service is active, it will start monitoring /var/log/*.log and
 
 See: https://grafana.com/docs/grafana-cloud/data-configuration/logs/collect-logs-with-promtail/
 
+
+Example to search for "message" in the log stream:
+
+    curl -G -s "http://localhost:3100/loki/api/v1/query_range" --data-urlencode 'query={job="varlogs"} |= "message"' --data-urlencode 'range=300' | jq .data.result
+
 ## Setting a custom config with an action
 
     juju run-action promtail/0 set-config config="$(base64 /tmp/promtail.yaml)" --wait
